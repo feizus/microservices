@@ -82,11 +82,103 @@ docker rmi $(docker images -q)
 - [Docker на bash](https://github.com/p8952/bocker)
 - [Best practices for writing Dockerfiles](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
 
+Docker machine:
+- [Linux](https://docs.docker.com/machine/install-machine/)
+```
+• docker-machine - встроенный в докер инструмент для создания хостов и установки на них docker engine. Имеет поддержку облаков и систем виртуализации (Virtualbox, GCP и др.)
 
+• Команда создания - docker-machine create <имя>. Имен может быть много, переключение между ними через eval $(docker-machine env <имя>). Переключение на локальный докер - eval $(docker-machine env --unset). Удаление - docker-machine rm <имя>.
 
+• docker-machine создает хост для докер демона со указываемым образом в --googlemachine-image, в ДЗ используется ubuntu-16.04. Образы которые используются для построения докер контейнеров к этому никак не относятся.
 
+• Все докер команды, которые запускаются в той же консоли после eval $(docker-machine env <имя>) работают с удаленным докер демоном в GCP.
+```
+Проверяем, что наш Docker-хост успешно создан:
+```
+$ docker-machine ls
+```
+и начинаем с ним работу
+```
+$ eval $(docker-machine env docker-host)
+```
 
+Dockerfile:
+```
+# За основу возьмем дистрибутив ubuntu версии 16.04
+FROM ubuntu:16.04
 
+# Для работы приложения нам нужны mongo и ruby
+# Обновим кеш репозитория и установим нужные пакеты
+RUN apt-get update
+RUN apt-get install -y mongodb-server ruby-full ruby-dev build-essential git
+RUN gem install bundler
+# Скачаем наше приложение в контейнер
+RUN git clone -b monolith https://github.com/express42/reddit.git
+
+# Скопируем файлы конфигурации в контейнер
+COPY mongod.conf /etc/mongod.conf
+COPY db_config /reddit/db_config
+COPY start.sh /start.sh
+
+# Теперь нам нужно установить зависимости приложения и произвести настройку
+RUN cd /reddit && bundle install
+RUN chmod 0777 /start.sh
+
+# Добавляем старт сервиса при старте контейнера
+CMD ["/start.sh"]
+```
+Теперь мы готовы собрать свой образ
+```
+$ docker build -t reddit:latest .
+```
+```
+• Точка в конце обязательна, она указывает на путь до Docker-контекста
+• Флаг -t задает тег для собранного образа
+```
+Теперь можно запустить наш контейнер
+командой:
+```
+$ docker run --name reddit -d --network=host reddit:latest
+$ docker-machine ls
+```
+Загрузим наш образ на docker hub для использования в будущем:
+```
+$ docker tag reddit:latest <your-login>/otus-reddit:1.0
+$ docker push <your-login>/otus-reddit:1.0
+```
+Проверка: 
+
+Выполним в другой консоли:
+```
+$ docker run --name reddit -d -p 9292:9292 <your-login>/otus-reddit:1.0
+```
+Дополнительно можете с помощью следующих команд изучить логи контейнера, зайти в выполняемый контейнер, посмотреть список процессов, вызвать остановку контейнера, запустить его повторно, остановить и удалить, запустить контейнер без запуска приложения и посмотреть процессы:
+```
+• docker logs reddit -f
+• docker exec -it reddit bash
+• ps aux
+• killall5 1
+• docker start reddit
+• docker stop reddit && docker rm reddit
+• docker run --name reddit --rm -it <your-login>/otus-reddit:1.0 bash
+• ps aux
+• exit
+```
+И с помощью следующих команд можно посмотреть подробную информацию о образе, вывести только определенный фрагмент информации, запустить приложение и добавить/удалить папки и посмотреть дифф, проверить что после остановки и удаления контейнера никаких изменений не останется:
+```
+• docker inspect <your-login>/otus-reddit:1.0
+• docker inspect <your-login>/otus-reddit:1.0 -f '{{.ContainerConfig.Cmd}}'
+• docker run --name reddit -d -p 9292:9292 <your-login>/otus-reddit:1.0
+• docker exec -it reddit bash
+• mkdir /test1234
+• touch /test1234/testfile
+• rmdir /opt
+• exit
+• docker diff reddit
+• docker stop reddit && docker rm reddit
+• docker run --name reddit --rm -it <your-login>/otus-reddit:1.0 bash
+• ls /
+```
 
 
 

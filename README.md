@@ -76,11 +76,11 @@ Docker rm & rmi
 docker rm $(docker ps -a -q) # удалит все незапущенные контейнеры
 docker rmi $(docker images -q)
 ```
+# Homework 15 Docker-2
 
-
-
-
-
+- [Docker Documentation](https://docs.docker.com/)
+- [Docker на bash](https://github.com/p8952/bocker)
+- [Best practices for writing Dockerfiles](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
 
 
 

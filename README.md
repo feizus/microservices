@@ -180,6 +180,47 @@ $ docker run --name reddit -d -p 9292:9292 <your-login>/otus-reddit:1.0
 • ls /
 ```
 
+# Homework 16 Docker-3
 
+- [DB per Service](https://microservices.io/patterns/data/database-per-service.html)
+- [Методология для создания сервисных приложений](https://12factor.net/ru/)
+- [NGINX Blog: Introduction to microservices](https://www.nginx.com/blog/introduction-to-microservices/)
+
+- [Best practices for writing Dockerfiles](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
+- [Отчуждаемый от IDE линтер](https://github.com/hadolint/hadolint)
+- [Test framework для Dockerfile](https://opensource.googleblog.com/2018/01/container-structure-tests-unit-tests.html)
+
+- [Troubleshooting docker-machine](https://docs.docker.com/toolbox/faqs/troubleshoot/)
+
+
+Создадим специальную сеть для приложения:
+```
+docker network create reddit
+```
+
+```
+Адреса для взаимодействия контейнеров задаются через ENV-переменные внутри Dockerfile'ов
+```
+Создадим Docker volume:
+```
+docker volume create reddit_db
+```
+Запустим наши контейнеры:
+```
+docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db -v reddit_db:/data/db mongo:latest
+docker run -d --network=reddit --network-alias=post feizus/post:1.0
+docker run -d --network=reddit --network-alias=comment feizus/comment:1.0
+docker run -d --network=reddit -p 9292:9292 feizus/ui:2.0
+```
+```
+:2.0 - Версия конейнера
+```
+```
+-v reddit_db:/data/db - volume
+```
+Выключение запущенных контейнеров:
+```
+docker kill $(docker ps -q)
+```
 
 

@@ -224,3 +224,9 @@ docker kill $(docker ps -q)
 ```
 
 
+# Homework 17 Docker-4
+
+- [goss - утилита для тестирования инфраструктуры](https://github.com/aelsabbahy/goss)
+- [dgoss - обертка на bash](https://github.com/aelsabbahy/goss/tree/master/extras/dgoss)
+- [Container-structure-test от Google](https://github.com/GoogleContainerTools/container-structure-test)
+

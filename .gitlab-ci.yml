@@ -9,7 +9,6 @@ stages:
 
 variables:
   DATABASE_URL: 'mongodb://mongo/user_posts'
-
 before_script:
   - cd reddit
   - bundle install
@@ -50,7 +49,6 @@ branch review:
   except:
     - master
 
-
 staging:
   stage: stage
   when: manual
@@ -71,4 +69,4 @@ production:
     - echo 'Deploy'
   environment:
     name: production
-    url: https://example.com 
+    url: https://beta.example.com

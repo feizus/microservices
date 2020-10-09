@@ -67,9 +67,10 @@ staging:
 
  script:
     - echo 'Deploy'
-    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
-    - cd $env_folder/src
-    - docker-compose up -d --build
+    - whereis rsync
+ #   - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
+ #   - cd $env_folder/src
+ #   - docker-compose up -d --build
 
  environment:
     name: stage

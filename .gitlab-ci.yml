@@ -63,6 +63,7 @@ staging:
    
  before_script:
    - if [ -z "$env_folder" ]; then echo "Need to set env_folder" && exit 1; fi
+   - export PATH=$PATH:/usr/bin
 
  script:
     - echo 'Deploy'

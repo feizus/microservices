@@ -62,9 +62,7 @@ staging:
    - /^\d+\.\d+\.\d+/
  script:
     - echo 'Deploy'
-    - export ci_project_name=$CI_PROJECT_NAME
-    - export ci_env_name=$CI_ENVIRONMENT_NAME
-    - cd $env_folder/$ci_project_name"_"$ci_env_name
+    - cd $env_folder
     - docker-compose up -d --build
 
  environment:

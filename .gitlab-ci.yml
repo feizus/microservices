@@ -66,6 +66,7 @@ staging:
 
  script:
     - echo 'Deploy'
+    - sudo rsync -r ./ $env_folder/src --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
     - cd $env_folder
     - docker-compose up -d --build
 

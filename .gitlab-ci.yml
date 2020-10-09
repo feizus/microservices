@@ -67,7 +67,8 @@ staging:
 
  script:
     - echo 'Deploy'
-    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
+#    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
+    - cp ./ $env_folder
     - cd $env_folder/src
     - docker-compose up -d --build
 
@@ -85,6 +86,4 @@ production:
  environment:
     name: production
     url: https://example.com
-
-
 

@@ -1,12 +1,59 @@
-#image: ruby:2.4.2
+image: ruby:2.4.2
 
 stages:
-#  - build
-#  - test
-#  - review
+  - build
+  - test
+  - review
   - stage
-#  - production
+  - production
 
+
+variables:
+ DATABASE_URL: 'mongodb://mongo/user_posts'
+before_script:
+ - cd reddit
+ - bundle install
+
+build_job:
+  stage: build
+  script:
+    - echo 'Building'
+
+test_unit_job:
+ stage: test
+ services:
+   - mongo:latest
+ script:
+   - ruby simpletest.rb
+
+test_integration_job:
+  stage: test
+  script:
+    - echo 'Testing 2'
+
+deploy_dev_job:
+ stage: review
+ script:
+   - echo 'Deploy'
+ environment:
+   name: dev
+   url: http://dev.example.com
+
+branch review:
+ stage: review
+ script: 
+    - echo "Deploy to $CI_ENVIRONMENT_SLUG"
+    - echo ci_project_name=$CI_PROJECT_NAME
+    - echo ci_env_name=$CI_ENVIRONMENT_NAME
+    - echo $env_folder/$ci_project_name"_"$ci_env_name
+
+ environment:
+    name: branch/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.example.com
+ only:
+    - branches
+ except:
+    - master
 
 staging:
  stage: stage
@@ -16,17 +63,29 @@ staging:
    
  before_script:
    - if [ -z "$env_folder" ]; then echo "Need to set env_folder" && exit 1; fi
+   - export PATH=$PATH:/usr/bin
 
  script:
     - echo 'Deploy'
-#    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
-    - cp ./ $env_folder
+    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
     - cd $env_folder/src
     - docker-compose up -d --build
 
  environment:
     name: stage
     url: https://beta.example.com
+
+production:
+ stage: production
+ when: manual
+ only:
+   - /^\d+\.\d+\.\d+/
+ script:
+    - echo 'Deploy'
+ environment:
+    name: production
+    url: https://example.com
+
 
 
 

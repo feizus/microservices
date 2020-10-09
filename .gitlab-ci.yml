@@ -43,10 +43,9 @@ branch review:
  stage: review
  script: 
     - echo "Deploy to $CI_ENVIRONMENT_SLUG"
-    - export ci_project_name=$CI_PROJECT_NAME
-    - export ci_env_name=$CI_ENVIRONMENT_NAME
-    - cd $env_folder/$ci_project_name"_"$ci_env_name
-    - docker-compose up -d --build
+    - echo ci_project_name=$CI_PROJECT_NAME
+    - echo ci_env_name=$CI_ENVIRONMENT_NAME
+    - echo $env_folder/$ci_project_name"_"$ci_env_name
 
  environment:
     name: branch/$CI_COMMIT_REF_NAME
@@ -63,6 +62,11 @@ staging:
    - /^\d+\.\d+\.\d+/
  script:
     - echo 'Deploy'
+    - export ci_project_name=$CI_PROJECT_NAME
+    - export ci_env_name=$CI_ENVIRONMENT_NAME
+    - cd $env_folder/$ci_project_name"_"$ci_env_name
+    - docker-compose up -d --build
+
  environment:
     name: stage
     url: https://beta.example.com

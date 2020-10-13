@@ -9,13 +9,13 @@ staging:
 # only:
 #   - /^\d+\.\d+\.\d+/
    
-# before_script:
-#   - if [ -z "$env_folder" ]; then echo "Need to set env_folder" && exit 1; fi
+ before_script:
+   - if [ -z "$env_folder" ]; then echo "Need to set env_folder" && exit 1; fi
 #   - export PATH=$PATH:/usr/bin
 
  script:
     - echo 'Deploy'
-#    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
+    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
     - whereis rsync
     - pwd
 #    - cp /* $env_folder 

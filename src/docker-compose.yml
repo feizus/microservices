@@ -1,40 +1,85 @@
 version: '3.3'
 services:
+
   post_db:
     image: mongo:3.2
     volumes:
       - post_db:/data/db
     networks:
-      - back_net
+      back_net:
+        aliases:
+          - post_db
+          - comment_db
+
   ui:
     build: ./ui
-    image: ${USERNAME}/ui:${UIver}
+    image: ${USER_NAME}/ui:${UIver}
     ports:
       - $env_port:9292/tcp
     networks:
       - front_net
+
   post:
     build: ./post-py
-    image: ${USERNAME}/post:${POSTver}
+    image: ${USER_NAME}/post:${POSTver}
     networks:
-        - front_net
-        - back_net
+      front_net:
+        aliases:
+          - post
+      back_net:
+        aliases:
+          - post
+
   comment:
     build: ./comment
-    image: ${USERNAME}/comment:${COMMENTver}
+    image: ${USER_NAME}/comment:${COMMENTver}
     networks:
-        - front_net
-        - back_net
+      front_net:
+        aliases:
+          - comment
+      back_net:
+        aliases:
+          - comment
 
+  prometheus:
+    image: ${USER_NAME}/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d'
+    networks:
+      - front_net
+      - back_net
+
+  node-exporter:
+    image: prom/node-exporter:v1.1.2
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - front_net
+      - back_net
+    
 volumes:
   post_db:
+  prometheus_data:
 
-    networks:
-        back_net:
-         ipam:
-          config:
-          - subnet: 10.0.2.0/24
-        front_net:
-         ipam:
-          config:
-          - subnet: 10.0.1.0/24
+networks:
+  back_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
+  front_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24

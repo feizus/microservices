@@ -1,0 +1,29 @@
+
+stages:
+  - stage
+
+
+staging:
+ stage: stage
+# when: manual
+# only:
+#   - /^\d+\.\d+\.\d+/
+   
+ before_script:
+#   - if [ -z "$env_folder" ]; then echo "Need to set env_folder" && exit 1; fi
+   - export PATH=$PATH:/usr/bin
+
+ script:
+    - echo 'Deploy'
+#    - rsync -r ./ $env_folder --exclude '.git' --exclude '.gitlab-ci.yml' --exclude '.gitignore' --delete 
+    - whereis rsync
+    - pwd
+#    - cp /* $env_folder 
+#    - cd $env_folder/src
+#    - docker-compose up -d --build
+
+ environment:
+    name: stage
+    url: https://beta.example.com
+
+

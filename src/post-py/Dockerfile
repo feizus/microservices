@@ -1,13 +1,10 @@
-FROM python:3.6.0-alpine
-
+FROM python:3.6.6-alpine
 WORKDIR /app
 COPY . /app
 
-RUN apk --no-cache --update add build-base && \
-    pip install -r /app/requirements.txt && \
-    apk del build-base
-
+RUN apk update && apk add --no-cache musl-dev gcc && pip install --upgrade pip && pip install -r /app/requirements.txt && apk del gcc musl-dev && rm -rf /var/cache/apk/*
 ENV POST_DATABASE_HOST post_db
 ENV POST_DATABASE posts
 
-ENTRYPOINT ["python3", "post_app.py"]
+CMD ["python3", "post_app.py"]
+

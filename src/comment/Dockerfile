@@ -1,10 +1,9 @@
-FROM ruby:2.2
-RUN apt-get update -qq && apt-get install -y build-essential
+FROM ruby:2.4.6-alpine
+RUN apk add --no-cache build-base
 
 ENV APP_HOME /app
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
-
 COPY Gemfile* $APP_HOME/
 RUN bundle install
 COPY . $APP_HOME

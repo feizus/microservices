@@ -14,6 +14,7 @@ from py_zipkin.transport import BaseTransportHandler
 
 
 CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
+REQUEST_DB_LATENCY = prometheus_client.Histogram('post_read_db_seconds', 'Request DB time')
 POST_DATABASE_HOST = os.getenv('POST_DATABASE_HOST', '127.0.0.1')
 POST_DATABASE_PORT = os.getenv('POST_DATABASE_PORT', '27017')
 ZIPKIN_HOST = os.getenv('ZIPKIN_HOST', 'zipkin')

@@ -230,3 +230,248 @@ docker kill $(docker ps -q)
 - [dgoss - обертка на bash](https://github.com/aelsabbahy/goss/tree/master/extras/dgoss)
 - [Container-structure-test от Google](https://github.com/GoogleContainerTools/container-structure-test)
 
+# Homework 17 gitlab-ci-1
+
+Создаем директории под volumes
+```
+mkdir -p /srv/gitlab/config /srv/gitlab/data /srv/gitlab/logs
+```
+Подготовим docker-compose.yml для запуска Gitlab
+```
+version: "3.3"
+services:
+  web:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: 'gitlab.example.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://X.X.X.X'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '2222:22'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab'
+      - '/srv/gitlab/data:/var/opt/gitlab'
+```
+Запуск docker-compose up -d
+Добавление раннера Gitlab CI
+```
+docker run -d --name gitlab-runner --restart always -v /srv/gitlab-runner/config:/etc/gitlab-runner -v /var/run/docker.sock:/var/run/docker.sock gitlab/gitlab-runner:latest
+
+docker exec -it gitlab-runner gitlab-runner register \
+    --url http://X.X.X.X/ \
+    --non-interactive \
+    --locked=false \
+    --name DockerRunner \
+    --executor docker \
+    --docker-image alpine:latest \
+    --registration-token MLn1YmAeKxhafEtJEBCN \
+    --tag-list "linux,xenial,ubuntu,docker" \
+    --run-untagged
+```
+
+# Homework 21 monitoring-2
+
+## cAdvisor
+
+Добавим запуск cAdvisor для мониторинга контейнеров
+```
+# docker-compose-monitoring.yml
+  cadvisor:
+    image: google/cadvisor:v0.29.0
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:rw"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+    ports:
+      - "8080:8080"
+```
+```
+# prometheus.yml
+  - job_name: "cadvisor"
+    static_configs:
+      - targets:
+          - "cadvisor:8080"
+```
+## Grafana
+
+Добавим Grafana для визуализации метрик
+```
+# docker-compose-monitoring.yml
+  grafana:
+    image: grafana/grafana:5.0.0
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+volumes:
+  grafana_data:
+```
+## Alertmanager
+
+Добавим Alertmanager для оправки сообшений при проблемах
+```
+# docker-compose-monitoring.yml
+  alertmanager:
+    image: ${D_USERNAME}/alertmanager
+    environment:
+      - SLACK_URL=${SLACK_URL:-https://hooks.slack.com/services/TOKEN}
+      - SLACK_CHANNEL=${SLACK_CHANNEL:-general}
+      - SLACK_USER=${SLACK_USER:-alertmanager}
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
+```
+## Alert rules
+```
+# monitoring/prometheus/alerts.yml
+groups:
+  - name: alert.rules
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute"
+          summary: "Instance {{ $labels.instance }} down"
+```
+```
+# prometheus.yml
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+      - "alertmanager:9093"
+```
+
+## Задание*
+
+    Makefile обновлен
+    Docker Engine Metrics.json
+    Docker Metrics Telegraf.json создание настроенного конфига для Telegraf
+```
+docker run --rm telegraf:1.17-alpine telegraf -sample-config --input-filter docker_log --output-filter prometheus_client > telegraf.conf
+```
+
+    Отправка на e-mail
+    Сбор метрик с Яндекс.Облака
+```
+  - job_name: 'yc-monitoring-export'
+    metrics_path: '/monitoring/v2/prometheusMetrics'
+    params:
+      folderId:
+        - 'b1g3ohh4eqd4pok4ompb'
+      service:
+        - 'compute'
+    bearer_token_file: 'api-key.yml'
+    static_configs:
+      - targets: ['monitoring.api.cloud.yandex.net']
+        labels:
+          folderId: 'b1g3ohh4eqd4pok4ompb'
+          service: 'compute'
+```
+# Homework 23 logging-1
+
+## ElasticStack
+
+Создадим docker-compose-logging.yml с описание закуска Elasticsearch Fluentd Kibana.
+Fluentd
+
+Настойка Fluentd находится в файле logging/fluentd/fluent.conf
+```
+<source>
+  @type forward
+  port 24224
+  bind 0.0.0.0
+</source>
+
+<match *.**>
+  @type copy
+  <store>
+    @type elasticsearch
+    host elasticsearch
+    port 9200
+    logstash_format true
+    logstash_prefix fluentd
+    logstash_dateformat %Y%m%d
+    include_tag_key true
+    type_name access_log
+    tag_key @log_name
+    flush_interval 1s
+  </store>
+  <store>
+    @type stdout
+  </store>
+</match>
+```
+Перенаправляем логи в Fluentd к контейнерам приложения добавим
+```
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.ui
+```
+## Kibana
+
+Для лучшей визуализации логов добавим фильтры в logging/fluentd/fluent.conf
+```
+# фильтр для тега service.post
+<filter service.post>
+  @type parser
+  format json
+  key_name log
+</filter>
+# фильтры для тега service.ui
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern %{RUBY_LOGGER}
+  key_name log
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| request_id=%{GREEDYDATA:request_id} \| message=%{GREEDYDATA:message}
+  key_name message
+  reserve_data true
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| path=%{URIPATH:path} \| request_id=%{GREEDYDATA:request_id} \| remote_addr=%{IPV4:remote_addr} \| method= %{WORD:method} \| response_status=%{NUMBER:response_status}
+  key_name message
+  reserve_data true
+</filter>
+```
+## Трайсинг Zipkin
+
+Позволяет отобразить время обработки запроса и выяснить где происходит задержка.
+```
+# docker-compose-logging.yml
+  zipkin:
+    image: openzipkin/zipkin:2.21.0
+    ports:
+      - "9411:9411"
+    networks:
+      - frontend
+      - backend
+```

@@ -1,5 +1,15 @@
-version: '3'
+version: '3.3'
 services:
+
+  zipkin:
+#    image: openzipkin/zipkin:2.21.0
+    image: openzipkin/zipkin:2.23.2
+    ports:
+      - "9411:9411"
+    networks:
+      - front_net
+      - back_net
+
   fluentd:
 #    image: ${USER_NAME}/fluentd
     build: ../logging/fluentd
@@ -21,3 +31,13 @@ services:
     image: kibana:7.4.0
     ports:
       - "5601:5601"
+      
+networks:
+  back_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
+  front_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
